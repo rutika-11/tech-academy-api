@@ -7,7 +7,7 @@ export const registerUser = async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        // ✅ Input validation
+        // Input validation
         if (!name || !email || !password) {
             return res.status(400).json({ message: "All fields are required" });
         }
@@ -28,7 +28,6 @@ export const registerUser = async (req, res) => {
             password: hashedPassword,
         });
 
-        // Send response (no password)
         res.status(201).json({
             message: "User registered successfully",
             user: {
@@ -39,7 +38,6 @@ export const registerUser = async (req, res) => {
         });
 
     } catch (error) {
-        // ✅ Better error handling
         res.status(500).json({ message: error.message });
     }
 };
@@ -49,7 +47,7 @@ export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // ✅ Input validation
+        // Input validation
         if (!email || !password) {
             return res.status(400).json({ message: "Email and password are required" });
         }
@@ -60,25 +58,43 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
-        // Compare password
+        // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
-        // Generate token
+        // 🔥 CREATE JWT TOKEN (UPDATED)
         const token = jwt.sign(
-            { id: user._id },
-            process.env.JWT_SECRET, // ✅ fixed (no fallback)
+            {
+                id: user._id,
+                name: user.name,
+                email: user.email
+            },
+            process.env.JWT_SECRET,
             { expiresIn: "1d" }
         );
 
         res.json({
             message: "Login successful",
             token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email
+            }
         });
 
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+};
+export const logout = () => {
+    // 🧹 Cleanup all auth data
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.clear();
+
+    // 🚀 Redirect to login
+    window.location.replace("/login");
 };
